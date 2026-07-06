@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sprout — Grow a Lighter Footprint</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* ============ TOKENS ============ */
+:root{
+  --pine:#123524;
+  --canopy:#2F6B45;
+  --canopy-dark:#1F4A32;
+  --leaf:#7FB069;
+  --leaf-light:#A9CC8E;
+  --sun:#F4C95D;
+  --sun-dark:#E0A82E;
+  --sky:#DCEEF2;
+  --sky-deep:#BFE0E8;
+  --river:#3E7CB1;
+  --river-light:#6FA8D6;
+  --soil:#8B5E34;
+  --cream:#FBF8F1;
+  --white:#ffffff;
+  --smog:#9096a0;
+  --danger:#C4562F;
+  --shadow: 0 10px 30px rgba(18,53,36,0.12);
+  --shadow-lg: 0 20px 50px rgba(18,53,36,0.18);
+  --radius: 26px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:'Nunito',sans-serif;
+  color:var(--pine);
+  background:linear-gradient(180deg,var(--sky) 0%, var(--sky-deep) 55%, #EFF7E9 100%);
+  min-height:100vh;
+  overflow-x:hidden;
+  position:relative;
+}
+h1,h2,h3,.display{font-family:'Fredoka',sans-serif; font-weight:600; letter-spacing:-0.01em;}
+.mono{font-family:'JetBrains Mono',monospace;}
+button{font-family:'Nunito',sans-serif;}
+
+/* ============ LIVE BACKGROUND SCENE ============ */
+.scene{
+  position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none;
+}
+.sun{
+  position:absolute; top:6%; right:8%; width:120px; height:120px; border-radius:50%;
+  background:radial-gradient(circle at 35% 35%, #FFE9A8, var(--sun) 60%, var(--sun-dark) 100%);
+  box-shadow:0 0 80px 20px rgba(244,201,93,0.55);
+  animation:pulse 6s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.05);}}
+.ray{
+  position:absolute; top:6%; right:8%; width:220px; height:220px; margin:-50px;
+  background:conic-gradient(from 0deg, transparent 0deg, rgba(244,201,93,0.18) 8deg, transparent 16deg,
+    transparent 40deg, rgba(244,201,93,0.18) 48deg, transparent 56deg,
+    transparent 80deg, rgba(244,201,93,0.18) 88deg, transparent 96deg,
+    transparent 120deg, rgba(244,201,93,0.18) 128deg, transparent 136deg,
+    transparent 160deg, rgba(244,201,93,0.18) 168deg, transparent 176deg,
+    transparent 200deg, rgba(244,201,93,0.18) 208deg, transparent 216deg,
+    transparent 240deg, rgba(244,201,93,0.18) 248deg, transparent 256deg,
+    transparent 280deg, rgba(244,201,93,0.18) 288deg, transparent 296deg,
+    transparent 320deg, rgba(244,201,93,0.18) 328deg, transparent 336deg);
+  border-radius:50%;
+  animation:spin 60s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+.cloud{
+  position:absolute; background:#fff; border-radius:50px; opacity:0.75; filter:blur(0.5px);
+  animation:drift linear infinite;
+}
+.cloud:before,.cloud:after{content:'';position:absolute;background:#fff;border-radius:50%;}
+@keyframes drift{from{transform:translateX(-15vw);}to{transform:translateX(115vw);}}
+.hills{
+  position:absolute; bottom:0; left:0; width:100%; height:26vh; min-height:170px;
+}
+.hill{position:absolute; bottom:0; width:60%; height:100%; border-radius:50% 50% 0 0;}
+.hill.back{background:#BFDDB2; left:-10%; width:70%; height:75%;}
+.hill.mid{background:#9FC98A; right:-15%; width:75%; height:85%;}
+.hill.front{background:#7FAE6C; left:10%; width:90%; height:60%;}
+.leaf-fall{position:absolute; top:-40px; will-change:transform; animation:fall linear infinite;}
+@keyframes fall{
+  0%{transform:translateY(-5vh) translateX(0) rotate(0deg); opacity:0.9;}
+  100%{transform:translateY(105vh) translateX(40px) rotate(360deg); opacity:0.7;}
+}
+
+/* ============ LAYOUT ============ */
+.wrap{position:relative; z-index:1; max-width:920px; margin:0 auto; padding:28px 20px 90px;}
+.topbar{
+  display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:22px;
+}
+.brand{display:flex; align-items:center; gap:10px;}
+.brand-badge{
+  width:44px; height:44px; border-radius:14px; background:var(--canopy);
+  display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow);
+}
+.brand h1{font-size:22px; margin:0; color:var(--canopy-dark);}
+.brand span{display:block; font-size:12px; color:var(--soil); font-weight:700; letter-spacing:.04em;}
+
+.meter{
+  display:flex; align-items:center; gap:10px; background:rgba(255,255,255,0.7);
+  backdrop-filter:blur(6px); padding:8px 14px 8px 8px; border-radius:100px; box-shadow:var(--shadow);
+}
+.meter .tree-mini{width:34px; height:34px;}
+.meter .num{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:14px; color:var(--pine);}
+.meter .lbl{font-size:11px; color:var(--soil); font-weight:700;}
+
+/* stepping stone progress */
+.trail{display:flex; align-items:center; gap:6px; margin:18px 0 26px; flex-wrap:wrap;}
+.stone{
+  width:30px; height:30px; border-radius:50%; background:#fff; border:2px solid #cfe3cd;
+  display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800;
+  color:#9db99a; transition:all .25s ease; cursor:pointer; flex-shrink:0;
+}
+.stone.done{background:var(--leaf); border-color:var(--leaf); color:#fff;}
+.stone.active{background:var(--canopy); border-color:var(--canopy); color:#fff; transform:scale(1.18); box-shadow:0 0 0 5px rgba(47,107,69,0.18);}
+.stone-line{flex:1; height:3px; background:#cfe3cd; border-radius:2px; min-width:8px;}
+
+/* card */
+.card{
+  background:var(--white); border-radius:var(--radius); box-shadow:var(--shadow-lg);
+  padding:34px 34px 28px; position:relative; overflow:hidden;
+}
+.card:before{
+  content:''; position:absolute; top:-60px; right:-60px; width:180px; height:180px; border-radius:50%;
+  background:radial-gradient(circle, rgba(127,176,105,0.16), transparent 70%);
+}
+.step{display:none; animation:riseIn .45s ease;}
+.step.active{display:block;}
+@keyframes riseIn{from{opacity:0; transform:translateY(14px);}to{opacity:1; transform:translateY(0);}}
+
+.step-head{display:flex; gap:16px; align-items:flex-start; margin-bottom:22px;}
+.mascot{width:76px; height:76px; flex-shrink:0;}
+.step-head h2{font-size:26px; margin:0 0 6px; color:var(--canopy-dark);}
+.bubble{
+  background:var(--cream); border-radius:16px 16px 16px 4px; padding:10px 14px; font-size:14.5px;
+  color:var(--pine); position:relative; max-width:520px; line-height:1.4;
+}
+
+.field{margin-bottom:18px;}
+.field label{display:block; font-weight:700; font-size:14px; margin-bottom:6px; color:var(--pine);}
+.hint{font-size:12px; color:#7c8f7c; margin-top:4px; display:block;}
+input[type=number], input[type=text], select{
+  width:100%; padding:12px 14px; border-radius:12px; border:2px solid #E3EEE0; font-size:15px;
+  font-family:'Nunito',sans-serif; background:#FAFDF8; color:var(--pine); transition:border .2s;
+}
+input:focus, select:focus{outline:none; border-color:var(--leaf); background:#fff;}
+.row{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+.row3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;}
+@media (max-width:640px){.row,.row3{grid-template-columns:1fr;}}
+
+.seg{display:flex; gap:8px; flex-wrap:wrap;}
+.seg button{
+  padding:10px 16px; border-radius:100px; border:2px solid #E3EEE0; background:#fff; cursor:pointer;
+  font-weight:700; font-size:13.5px; color:var(--pine); transition:all .18s;
+}
+.seg button.on{background:var(--canopy); border-color:var(--canopy); color:#fff;}
+.seg button:hover{border-color:var(--leaf);}
+
+.check{display:flex; align-items:center; gap:10px; padding:10px 0; cursor:pointer; font-weight:700; font-size:14px;}
+.check input{width:20px; height:20px; accent-color:var(--canopy); cursor:pointer;}
+
+.conditional{
+  border-left:3px solid var(--leaf-light); padding-left:16px; margin-top:6px; margin-bottom:6px;
+  animation:riseIn .3s ease;
+}
+
+.nav{display:flex; justify-content:space-between; align-items:center; margin-top:28px;}
+.btn{
+  padding:13px 26px; border-radius:100px; border:none; font-weight:800; font-size:14.5px;
+  cursor:pointer; transition:transform .15s, box-shadow .15s; display:inline-flex; align-items:center; gap:8px;
+}
+.btn:active{transform:scale(0.96);}
+.btn-primary{background:var(--sun); color:var(--pine); box-shadow:0 8px 20px rgba(244,201,93,0.5);}
+.btn-primary:hover{box-shadow:0 10px 26px rgba(244,201,93,0.65);}
+.btn-ghost{background:transparent; color:var(--soil); border:2px solid #E3EEE0;}
+.btn-ghost:hover{border-color:var(--soil);}
+.btn-danger{background:transparent; color:var(--danger); border:2px solid #f0c9ba;}
+
+/* results */
+.tree-hero{display:flex; flex-direction:column; align-items:center; margin-bottom:8px;}
+.tree-big{width:220px; height:220px;}
+.verdict{font-family:'Fredoka'; font-size:24px; color:var(--canopy-dark); text-align:center; margin:6px 0 2px;}
+.verdict-sub{text-align:center; color:var(--soil); font-size:14.5px; max-width:480px; margin:0 auto 22px;}
+
+.stat-row{display:flex; gap:16px; flex-wrap:wrap; justify-content:center; margin-bottom:26px;}
+.stat{background:var(--cream); border-radius:18px; padding:16px 22px; text-align:center; min-width:140px;}
+.stat .v{font-family:'JetBrains Mono'; font-weight:700; font-size:24px; color:var(--canopy-dark);}
+.stat .l{font-size:12px; color:var(--soil); font-weight:700; margin-top:2px;}
+
+.bars{margin:10px 0 28px;}
+.bar-row{display:flex; align-items:center; gap:12px; margin-bottom:12px;}
+.bar-icon{width:30px; height:30px; flex-shrink:0;}
+.bar-label{width:130px; font-size:13.5px; font-weight:700; flex-shrink:0;}
+.bar-track{flex:1; height:16px; background:#EEF4E8; border-radius:10px; overflow:hidden;}
+.bar-fill{height:100%; border-radius:10px; transition:width .6s ease;}
+.bar-val{width:70px; text-align:right; font-family:'JetBrains Mono'; font-size:12.5px; font-weight:700; flex-shrink:0;}
+
+.compare{margin:24px 0;}
+.compare-row{margin-bottom:14px;}
+.compare-row .lab{display:flex; justify-content:space-between; font-size:13px; font-weight:700; margin-bottom:4px;}
+.compare-track{height:12px; background:#EEF4E8; border-radius:8px; overflow:hidden;}
+.compare-fill{height:100%; border-radius:8px;}
+
+.tips{background:#F1F8ED; border-radius:18px; padding:20px 22px; margin-top:10px;}
+.tips h3{margin:0 0 12px; font-size:17px; color:var(--canopy-dark); display:flex; align-items:center; gap:8px;}
+.tips ul{margin:0; padding-left:20px;}
+.tips li{margin-bottom:8px; font-size:14px; line-height:1.5;}
+
+.disclaimer{font-size:11.5px; color:#96a596; margin-top:22px; line-height:1.5; text-align:center;}
+
+.intro-hero{text-align:center; padding:10px 0 6px;}
+.intro-hero .tree-big{width:180px; height:180px;}
+.intro-hero h2{font-size:32px; margin:14px 0 8px;}
+.intro-hero p{max-width:520px; margin:0 auto 22px; color:var(--soil); font-size:15px; line-height:1.55;}
+.char-strip{display:flex; justify-content:center; gap:14px; margin:18px 0 6px; flex-wrap:wrap;}
+.char-strip .mascot{width:52px; height:52px; opacity:0.9;}
+
+@media (max-width:640px){
+  .card{padding:24px 20px 22px;}
+  .step-head{flex-direction:column; align-items:center; text-align:center;}
+  .step-head .bubble{margin:0 auto;}
+}
+</style>
+</head>
+<body>
+
+<div class="scene" id="scene"></div>
+
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-badge" id="brandBadge"></div>
+      <div>
+        <h1>Sprout</h1>
+        <span>GROW A LIGHTER FOOTPRINT</span>
+      </div>
+    </div>
+    <div class="meter">
+      <div class="tree-mini" id="miniTree"></div>
+      <div>
+        <div class="num" id="miniNum">0.0 t</div>
+        <div class="lbl">SO FAR / YEAR</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="trail" id="trail"></div>
+
+  <div class="card">
+    <!-- STEP 0: INTRO -->
+    <div class="step active" data-step="0">
+      <div class="intro-hero">
+        <div class="tree-big" id="introTree"></div>
+        <h2>Meet Sprout</h2>
+        <p>Sprout is a little forest spirit whose health mirrors your household's footprint. Answer a few honest questions about your water, power, travel and daily habits — real South African numbers do the maths, Sprout just tells the story. No guessing, just growing.</p>
+        <div class="char-strip" id="charStrip"></div>
+      </div>
+      <div class="nav" style="justify-content:center;">
+        <button class="btn btn-primary" onclick="goNext()">Start the trail 🌱</button>
+      </div>
+    </div>
+
+    <!-- STEP 1: HOUSEHOLD -->
+    <div class="step" data-step="1">
+      <div class="step-head">
+        <div class="mascot" id="m-household"></div>
+        <div>
+          <h2>Your household</h2>
+          <div class="bubble">Everything else scales from here — a home of 6 uses more than a home of 1, and that's completely fair to account for.</div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Household size</label>
+          <input type="number" id="householdSize" min="1" value="3">
+          <span class="hint">People sharing water, power and meals</span>
+        </div>
+        <div class="field">
+          <label>Country</label>
+          <select id="country">
+            <option value="ZA" selected>South Africa</option>
+            <option value="OTHER">Other / global average</option>
+          </select>
+        </div>
+      </div>
+      <div class="row" id="provinceRow">
+        <div class="field">
+          <label>Province</label>
+          <select id="province">
+            <option>Gauteng</option><option>Western Cape</option><option>KwaZulu-Natal</option>
+            <option>Eastern Cape</option><option>Free State</option><option>Limpopo</option>
+            <option>Mpumalanga</option><option>North West</option><option>Northern Cape</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Area type</label>
+          <div class="seg" id="areaType">
+            <button data-v="urban" class="on">Urban</button>
+            <button data-v="rural">Rural</button>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Housing type</label>
+          <select id="housingType">
+            <option>House</option><option>Apartment / flat</option>
+            <option>Informal dwelling</option><option>Farm / smallholding</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Bedrooms</label>
+          <input type="number" id="bedrooms" min="1" value="3">
+        </div>
+      </div>
+      <div class="nav">
+        <button class="btn btn-ghost" onclick="goBack()">← Back</button>
+        <button class="btn btn-primary" onclick="goNext()">Next: Water →</button>
+      </div>
+    </div>
+
+    <!-- STEP 2: WATER -->
+    <div class="step" data-step="2">
+      <div class="step-head">
+        <div class="mascot" id="m-water"></div>
+        <div>
+          <h2>Water</h2>
+          <div class="bubble" id="waterQuote">Every litre took energy to treat and pump to your tap. Got a bill handy? Even better — exact beats estimated.</div>
+        </div>
+      </div>
+      <div class="field">
+        <label>How should we work this out?</label>
+        <div class="seg" id="waterMode">
+          <button data-v="known" class="on">I know my usage</button>
+          <button data-v="estimate">Estimate from habits</button>
+        </div>
+      </div>
+      <div id="waterKnown" class="conditional">
+        <div class="field">
+          <label>Average monthly usage (kilolitres, kL)</label>
+          <input type="number" id="monthlyKL" min="0" value="18" step="0.5">
+          <span class="hint">Check your municipal bill — 1 kL = 1,000 litres</span>
+        </div>
+      </div>
+      <div id="waterEstimate" class="conditional" style="display:none;">
+        <div class="row3">
+          <div class="field"><label>Showers / day (household)</label><input type="number" id="showersPerDay" min="0" value="3"></div>
+          <div class="field"><label>Avg. shower length (min)</label><input type="number" id="showerMinutes" min="0" value="7"></div>
+          <div class="field"><label>Shower head</label>
+            <select id="showerHeadType"><option value="9">Standard (9 L/min)</option><option value="6">Low-flow (6 L/min)</option></select>
+          </div>
+        </div>
+        <div class="row3">
+          <div class="field"><label>Baths / week</label><input type="number" id="bathsPerWeek" min="0" value="1"></div>
+          <div class="field"><label>Toilet flushes / day</label><input type="number" id="toiletFlushesPerDay" min="0" value="12"></div>
+          <div class="field"><label>Toilet type</label>
+            <select id="toiletType"><option value="9">Older (9 L/flush)</option><option value="4.5">Dual-flush (~4.5 L avg)</option></select>
+          </div>
+        </div>
+        <div class="row3">
+          <div class="field"><label>Washing machine loads / week</label><input type="number" id="washingLoadsPerWeek" min="0" value="3"></div>
+          <div class="field"><label>Dishwasher loads / week</label><input type="number" id="dishwasherLoadsPerWeek" min="0" value="0"></div>
+          <div class="field"><label>Garden watered (m²)</label><input type="number" id="gardenM2" min="0" value="0"></div>
+        </div>
+        <div class="row">
+          <div class="field"><label>Garden watering (hours / week)</label><input type="number" id="gardenHoursPerWeek" min="0" value="0"></div>
+          <div class="field">
+            <label class="check"><input type="checkbox" id="hasPool"> Has a swimming pool</label>
+            <input type="number" id="poolSizeM2" min="0" value="20" placeholder="Pool surface area m²" style="display:none; margin-top:6px;">
+          </div>
+        </div>
+      </div>
+      <label class="check"><input type="checkbox" id="rainwater"> Harvests rainwater for some household use</label>
+      <div class="nav">
+        <button class="btn btn-ghost" onclick="goBack()">← Back</button>
+        <button class="btn btn-primary" onclick="goNext()">Next: Electricity →</button>
+      </div>
+    </div>
+
+    <!-- STEP 3: ELECTRICITY -->
+    <div class="step" data-step="3">
+      <div class="step-head">
+        <div class="mascot" id="m-electricity"></div>
+        <div>
+          <h2>Electricity</h2>
+          <div class="bubble">South Africa's grid is still coal-heavy, so kWh here carry more CO₂ than in most countries. This is usually the biggest lever you have.</div>
+        </div>
+      </div>
+      <div class="field">
+        <label>How should we work this out?</label>
+        <div class="seg" id="elecMode">
+          <button data-v="known" class="on">I know my usage</button>
+          <button data-v="estimate">Estimate from appliances</button>
+        </div>
+      </div>
+      <div id="elecKnown" class="conditional">
+        <div class="field">
+          <label>Average monthly usage (kWh)</label>
+          <input type="number" id="monthlyKWh" min="0" value="850">
+          <span class="hint">From your bill or prepaid meter top-up history</span>
+        </div>
+      </div>
+      <div id="elecEstimate" class="conditional" style="display:none;">
+        <div class="row">
+          <div class="field">
+            <label class="check"><input type="checkbox" id="hasGeyser" checked> Electric geyser</label>
+            <input type="number" id="geyserLitres" min="0" value="150" placeholder="Geyser size (litres)">
+          </div>
+          <div class="field"><label>Aircon use in summer (hrs/day)</label><input type="number" id="acHours" min="0" value="0"></div>
+        </div>
+        <div class="row">
+          <div class="field"><label>Electric stove / oven (hrs/week)</label><input type="number" id="stoveHours" min="0" value="6"></div>
+          <div class="field">
+            <label class="check"><input type="checkbox" id="hasPoolPump"> Pool pump</label>
+            <input type="number" id="poolPumpHours" min="0" value="4" placeholder="Hours / day" style="display:none;">
+          </div>
+        </div>
+        <div class="row3">
+          <div class="field"><label>Fridges / freezers (count)</label><input type="number" id="fridgeCount" min="0" value="1"></div>
+          <div class="field"><label>Lighting type</label>
+            <select id="lightingType"><option value="led">LED</option><option value="cfl">CFL</option><option value="incandescent">Incandescent</option></select>
+          </div>
+          <div class="field"><label>Bulbs (count)</label><input type="number" id="bulbCount" min="0" value="10"></div>
+        </div>
+        <div class="field"><label>Washer/dryer loads / week</label><input type="number" id="dryerLoadsPerWeek" min="0" value="1"></div>
+      </div>
+      <div class="nav">
+        <button class="btn btn-ghost" onclick="goBack()">← Back</button>
+        <button class="btn btn-primary" onclick="goNext()">Next: Backup power →</button>
+      </div>
+    </div>
+
+    <!-- STEP 4: BACKUP POWER -->
+    <div class="step" data-step="4">
+      <div class="step-head">
+        <div class="mascot" id="m-backup"></div>
+        <div>
+          <h2>Backup power &amp; loadshedding</h2>
+          <div class="bubble">Generators burn fuel directly, so they can spike a footprint fast. Solar and grid-charged batteries are far gentler.</div>
+        </div>
+      </div>
+      <div class="field">
+        <label>What do you rely on during outages?</label>
+        <div class="seg" id="backupType">
+          <button data-v="none" class="on">None</button>
+          <button data-v="generator">Generator</button>
+          <button data-v="inverter">Inverter + battery (grid-charged)</button>
+          <button data-v="solar">Solar + battery</button>
+          <button data-v="ups">UPS only</button>
+        </div>
+      </div>
+      <div id="genFields" class="conditional" style="display:none;">
+        <div class="row3">
+          <div class="field"><label>Fuel type</label>
+            <select id="genFuel"><option value="petrol">Petrol</option><option value="diesel">Diesel</option></select>
+          </div>
+          <div class="field"><label>Hours run / month</label><input type="number" id="genHours" min="0" value="20"></div>
+          <div class="field"><label>Average load (kW)</label><input type="number" id="genLoad" min="0" value="2.5" step="0.1"></div>
+        </div>
+      </div>
+      <div id="invFields" class="conditional" style="display:none;">
+        <div class="field"><label>Hours / month running on battery</label><input type="number" id="invHours" min="0" value="30"></div>
+        <span class="hint">We add a small charging-loss margin since the battery is topped up from the grid</span>
+      </div>
+      <div class="nav">
+        <button class="btn btn-ghost" onclick="goBack()">← Back</button>
+        <button class="btn btn-primary" onclick="goNext()">Next: Transport →</button>
+      </div>
+    </div>
+
+    <!-- STEP 5: TRANSPORT -->
+    <div class="step" data-step="5">
+      <div class="step-head">
+        <div class="mascot" id="m-transport"></div>
+        <div>
+          <h2>Getting around</h2>
+          <div class="bubble">One of the biggest personal levers on the planet — distance, fuel type and how full the vehicle is all matter.</div>
+        </div>
+      </div>
+      <label class="check"><input type="checkbox" id="hasCar" checked> Household runs a personal vehicle</label>
+      <div id="carFields" class="conditional">
+        <div class="row3">
+          <div class="field"><label>Fuel type</label>
+            <select id="carFuel">
+              <option value="petrol">Petrol</option><option value="diesel">Diesel</option>
+              <option value="hybrid">Hybrid</option><option value="electric">Electric</option>
+            </select>
+          </div>
+          <div class="field"><label>Distance / month (km)</label><input type="number" id="carKm" min="0" value="1200"></div>
+          <div class="field"><label>Fuel economy (L/100km)</label><input type="number" id="carEfficiency" min="0" value="8" step="0.1"></div>
+        </div>
+      </div>
+      <div class="field"><label style="margin-top:6px;">Public transport (per week)</label></div>
+      <div class="row3">
+        <div class="field"><label>Bus (km)</label><input type="number" id="busKm" min="0" value="0"></div>
+        <div class="field"><label>Train (km)</label><input type="number" id="trainKm" min="0" value="0"></div>
+        <div class="field"><label>Minibus taxi (km)</label><input type="number" id="taxiKm" min="0" value="20"></div>
+      </div>
+      <div class="nav">
+        <button class="btn btn-ghost" onclick="goBack()">← Back</button>
+        <button class="btn btn-primary" onclick="goNext()">Next: Flights →</button>
+      </div>
+    </div>
+
+    <!-- STEP 6: FLIGHTS -->
+    <div class="step" data-step="6">
+      <div class="step-head">
+        <div class="mascot" id="m-flights"></div>
+        <div>
+          <h2>Flights</h2>
+          <div class="bubble">Flying is rare for most people but huge per trip — a single long-haul return can outweigh months of driving.</div>
+        </div>
+      </div>
+      <div class="row3">
+        <div class="field"><label>Short-haul return flights / year</label><input type="number" id="shortHaul" min="0" value="0"><span class="hint">e.g. JNB–CPT</span></div>
+        <div class="field"><label>Long-haul return flights / year</label><input type="number" id="longHaul" min="0" value="0"><span class="hint">e.g. JNB–London</span></div>
+        <div class="field"><label>Usual cabin class</label>
+          <select id="cabinClass"><option value="1">Economy</option><option value="1.9">Business</option><option value="2.6">First</option></select>
+        </div>
+      </div>
+      <div class="nav">
+        <button class="btn btn-ghost" onclick="goBack()">← Back</button>
+        <button class="btn btn-primary" onclick="goNext()">Next: Heating & cooking →</button>
+      </div>
+    </div>
+
+    <!-- STEP 7: HEATING & COOKING -->
+    <div class="step" data-step="7">
+      <div class="step-head">
+        <div class="mascot" id="m-heating"></div>
+        <div>
+          <h2>Heating &amp; cooking</h2>
+          <div class="bubble">Electric heating is already counted in your electricity step — this is just for gas, paraffin, wood or coal.</div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Main space heating fuel</label>
+          <select id="heatFuel">
+            <option value="electric">Electric (already counted)</option>
+            <option value="gas">LPG gas</option>
+            <option value="paraffin">Paraffin</option>
+            <option value="wood">Wood</option>
+            <option value="coal">Coal</option>
+            <option value="none">None</option>
+          </select>
+        </div>
+        <div class="field"><label id="heatQtyLabel">Quantity / month</label><input type="number" id="heatQty" min="0" value="0"></div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Main cooking fuel</label>
+          <select id="cookFuel">
+            <option value="electric">Electric (already counted)</option>
+            <option value="gas">LPG gas</option>
+            <option value="paraffin">Paraffin</option>
+            <option value="wood">Wood</option>
+          </select>
+        </div>
+        <div class="field"><label id="cookQtyLabel">Quantity / month</label><input type="number" id="cookQty" min="0" value="0"></div>
+      </div>
+      <div class="nav">
+        <button class="btn btn-ghost" onclick="goBack()">← Back</button>
+        <button class="btn btn-primary" onclick="goNext()">Next: Food →</button>
+      </div>
+    </div>
+
+    <!-- STEP 8: FOOD -->
+    <div class="step" data-step="8">
+      <div class="step-head">
+        <div class="mascot" id="m-food"></div>
+        <div>
+          <h2>Food &amp; diet</h2>
+          <div class="bubble">What's on the plate matters more than food miles — meat and dairy are the heaviest hitters.</div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Household diet leans towards</label>
+        <div class="seg" id="dietType">
+          <button data-v="3.3">Meat-heavy</button>
+          <button data-v="2.5" class="on">Average omnivore</button>
+          <button data-v="1.9">Pescatarian</button>
+          <button data-v="1.7">Vegetarian</button>
+          <button data-v="1.5">Vegan</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Food waste at home</label>
+        <div class="seg" id="foodWaste">
+          <button data-v="1.0" class="on">Low (&lt;10%)</button>
+          <button data-v="1.15">Medium (~20%)</button>
+          <button data-v="1.3">High (&gt;30%)</button>
+        </div>
+      </div>
+      <div class="nav">
+        <button class="btn btn-ghost" onclick="goBack()">← Back</button>
+        <button class="btn btn-primary" onclick="goNext()">Next: Shopping →</button>
+      </div>
+    </div>
+
+    <!-- STEP 9: CONSUMPTION -->
+    <div class="step" data-step="9">
+      <div class="step-head">
+        <div class="mascot" id="m-shopping"></div>
+        <div>
+          <h2>Shopping &amp; stuff</h2>
+          <div class="bubble">Everything we buy carried emissions to make and ship — clothing, gadgets, and general household goods.</div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Compared to others, household shopping is</label>
+        <div class="seg" id="shopLevel">
+          <button data-v="0.6">Below average</button>
+          <button data-v="1.0" class="on">Average</button>
+          <button data-v="1.6">Above average</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Big electronics purchases this year (phones, laptops, TVs...)</label>
+        <input type="number" id="electronicsCount" min="0" value="1">
+      </div>
+      <div class="nav">
+        <button class="btn btn-ghost" onclick="goBack()">← Back</button>
+        <button class="btn btn-primary" onclick="goNext()">Next: Offsets →</button>
+      </div>
+    </div>
+
+    <!-- STEP 10: OFFSETS -->
+    <div class="step" data-step="10">
+      <div class="step-head">
+        <div class="mascot" id="m-offsets"></div>
+        <div>
+          <h2>Carbon offsets</h2>
+          <div class="bubble">Optional — if you already buy verified offsets, we'll subtract them. Offsets are a backstop, not a substitute for reducing.</div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Offsets purchased (tonnes CO₂e / year)</label><input type="number" id="offsetTonnes" min="0" value="0"></div>
+        <div class="field"><label>Offset quality</label>
+          <select id="offsetQuality"><option value="1">Verified / high quality</option><option value="0.5">Unsure / uncertain</option></select>
+        </div>
+      </div>
+      <div class="nav">
+        <button class="btn btn-ghost" onclick="goBack()">← Back</button>
+        <button class="btn btn-primary" onclick="showResults()">See Sprout's verdict 🌳</button>
+      </div>
+    </div>
+
+    <!-- STEP 11: RESULTS -->
+    <div class="step" data-step="11">
+      <div class="tree-hero">
+        <div class="tree-big" id="resultTree"></div>
+        <div class="verdict" id="verdictText">—</div>
+        <div class="verdict-sub" id="verdictSub">—</div>
+      </div>
+      <div class="stat-row">
+        <div class="stat"><div class="v" id="statTotal">0.0 t</div><div class="l">HOUSEHOLD / YEAR</div></div>
+        <div class="stat"><div class="v" id="statPerPerson">0.0 t</div><div class="l">PER PERSON / YEAR</div></div>
+        <div class="stat"><div class="v" id="statOffset">0.0 t</div><div class="l">OFFSET</div></div>
+      </div>
+
+      <h3 style="margin-bottom:6px;">Where it comes from</h3>
+      <div class="bars" id="breakdownBars"></div>
+
+      <h3 style="margin-bottom:10px;">How you compare</h3>
+      <div class="compare" id="compareBars"></div>
+
+      <div class="tips" id="tipsBox">
+        <h3>🌱 Sprout's top suggestions</h3>
+        <ul id="tipsList"></ul>
+      </div>
+
+      <div class="nav">
+        <button class="btn btn-ghost" onclick="goToStep(10)">← Edit answers</button>
+        <button class="btn btn-danger" onclick="restart()">Start over</button>
+      </div>
+      <div class="disclaimer">Figures use published South African and international reference factors (Eskom grid intensity, DEFRA-style fuel and diet factors, typical appliance and municipal water-energy estimates) and are for guidance and awareness, not a certified carbon audit. All maths runs locally in your browser — nothing is sent anywhere.</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   SPROUT — Carbon & Resource Footprint Trail
+   All calculation is deterministic JS using reference emission
+   factors. No AI/LLM involved in producing numbers.
+   ========================================================= */
+
+/* ---------- 1. LIVE BACKGROUND SCENE ---------- */
+(function buildScene(){
+  const scene = document.getElementById('scene');
+  scene.innerHTML = `
+    <div class="ray"></div>
+    <div class="sun"></div>
+    <div class="hills">
+      <div class="hill back"></div>
+      <div class="hill mid"></div>
+      <div class="hill front"></div>
+    </div>
+  `;
+  // clouds
+  for(let i=0;i<4;i++){
+    const c = document.createElement('div');
+    c.className='cloud';
+    const w = 70+Math.random()*60, h=w*0.4;
+    c.style.width=w+'px'; c.style.height=h+'px';
+    c.style.top=(5+Math.random()*20)+'%';
+    c.style.animationDuration=(55+Math.random()*35)+'s';
+    c.style.animationDelay=(-Math.random()*40)+'s';
+    scene.appendChild(c);
+  }
+  // falling leaves
+  const leafSVG = (color)=>`<svg width="22" height="22" viewBox="0 0 22 22" xmlns="http://www.w3.org/2000/svg"><path d="M11 1 C18 4 20 12 11 21 C2 12 4 4 11 1 Z" fill="${color}"/><path d="M11 3 L11 19" stroke="rgba(0,0,0,0.15)" stroke-width="1"/></svg>`;
+  const leafColors=['#7FB069','#A9CC8E','#F4C95D','#8B5E34'];
+  for(let i=0;i<12;i++){
+    const l = document.createElement('div');
+    l.className='leaf-fall';
+    l.style.left=(Math.random()*100)+'%';
+    l.style.animationDuration=(10+Math.random()*14)+'s';
+    l.style.animationDelay=(-Math.random()*20)+'s';
+    l.style.opacity = 0.5+Math.random()*0.4;
+    l.innerHTML = leafSVG(leafColors[i%leafColors.length]);
+    scene.appendChild(l);
+  }
+})();
+
+/* ---------- 2. MASCOT CHARACTER FACTORY ---------- */
+function faceParts(mood){
+  // mood: 'happy' | 'calm' | 'wink'
+  const mouth = mood==='happy'
+    ? `<path d="M40 62 Q50 72 60 62" stroke="#123524" stroke-width="3" fill="none" stroke-linecap="round"/>`
+    : mood==='wink'
+    ? `<path d="M40 60 Q50 66 60 60" stroke="#123524" stroke-width="3" fill="none" stroke-linecap="round"/>`
+    : `<path d="M42 62 Q50 67 58 62" stroke="#123524" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+  const eyeR = mood==='wink' ? '' : `<circle cx="63" cy="46" r="4.5" fill="#123524"/><circle cx="64.5" cy="44" r="1.4" fill="#fff"/>`;
+  const eyeL = `<circle cx="38" cy="46" r="4.5" fill="#123524"/><circle cx="39.5" cy="44" r="1.4" fill="#fff"/>`;
+  const winkPath = mood==='wink' ? `<path d="M59 46 Q63 43 67 46" stroke="#123524" stroke-width="2.5" fill="none" stroke-linecap="round"/>` : '';
+  return eyeL+eyeR+winkPath+mouth;
+}
+function svgWrap(inner){
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">${inner}</svg>`;
+}
+const MASCOTS = {
+  household: ()=>svgWrap(`
+    <path d="M50 14 L88 42 L80 42 L80 84 L20 84 L20 42 L12 42 Z" fill="#8B5E34"/>
+    <rect x="30" y="50" width="40" height="34" rx="8" fill="#F4C95D"/>
+    <path d="M15 44 L50 16 L85 44" stroke="#2F6B45" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <circle cx="50" cy="55" r="4" fill="#8B5E34"/>
+    ${faceParts('happy').replace(/cy="46"/g,'cy="66"').replace(/cy="44"/g,'cy="64"').replace(/62"/g,'80"')}
+  `),
+  water: ()=>svgWrap(`
+    <path d="M50 10 C68 38 82 54 82 68 A32 32 0 1 1 18 68 C18 54 32 38 50 10 Z" fill="#3E7CB1"/>
+    <ellipse cx="38" cy="55" rx="8" ry="12" fill="#6FA8D6" opacity="0.6"/>
+    ${faceParts('happy')}
+  `),
+  electricity: ()=>svgWrap(`
+    <circle cx="50" cy="45" r="34" fill="#F4C95D"/>
+    <rect x="40" y="76" width="20" height="10" rx="3" fill="#c9c9c9"/>
+    <rect x="42" y="86" width="16" height="6" rx="2" fill="#9a9a9a"/>
+    <path d="M54 8 L44 34 L54 34 L46 56 L68 26 L56 26 Z" fill="#E0A82E" opacity="0.85"/>
+    ${faceParts('wink')}
+  `),
+  backup: ()=>svgWrap(`
+    <rect x="18" y="30" width="64" height="44" rx="10" fill="#2F6B45"/>
+    <rect x="40" y="22" width="20" height="10" rx="3" fill="#2F6B45"/>
+    <path d="M56 38 L44 56 L52 56 L46 70 L64 50 L55 50 Z" fill="#F4C95D"/>
+    ${faceParts('calm')}
+  `),
+  transport: ()=>svgWrap(`
+    <rect x="12" y="42" width="76" height="28" rx="14" fill="#3E7CB1"/>
+    <path d="M24 42 Q32 22 50 22 Q68 22 76 42 Z" fill="#6FA8D6"/>
+    <circle cx="30" cy="74" r="9" fill="#123524"/><circle cx="70" cy="74" r="9" fill="#123524"/>
+    <circle cx="30" cy="74" r="3.5" fill="#cfd8e0"/><circle cx="70" cy="74" r="3.5" fill="#cfd8e0"/>
+    ${faceParts('happy').replace(/cy="46"/g,'cy="52"').replace(/cy="44"/g,'cy="50"')}
+  `),
+  flights: ()=>svgWrap(`
+    <ellipse cx="50" cy="55" rx="36" ry="20" fill="#fff" stroke="#DCEEF2" stroke-width="2"/>
+    <ellipse cx="30" cy="48" rx="18" ry="14" fill="#fff"/>
+    <ellipse cx="68" cy="46" rx="16" ry="13" fill="#fff"/>
+    <path d="M50 30 L58 46 L42 46 Z" fill="#3E7CB1"/>
+    <path d="M50 30 L44 42 L56 42 Z" fill="#6FA8D6"/>
+    ${faceParts('happy').replace(/cy="46"/g,'cy="58"').replace(/cy="44"/g,'cy="56"').replace(/62"/g,'72"')}
+  `),
+  heating: ()=>svgWrap(`
+    <path d="M50 10 C30 34 22 48 22 62 A28 28 0 1 0 78 62 C78 48 70 34 50 10 Z" fill="#E0762F"/>
+    <path d="M50 34 C40 50 36 58 36 66 A14 14 0 1 0 64 66 C64 58 60 50 50 34 Z" fill="#F4C95D"/>
+    ${faceParts('calm').replace(/62"/g,'76"')}
+  `),
+  food: ()=>svgWrap(`
+    <path d="M50 30 C68 30 80 46 80 62 A30 30 0 1 1 20 62 C20 46 32 30 50 30 Z" fill="#C4562F"/>
+    <path d="M50 30 C47 22 40 18 34 18 C34 26 42 30 50 30 Z" fill="#7FB069"/>
+    <rect x="48" y="14" width="4" height="16" rx="2" fill="#8B5E34"/>
+    ${faceParts('happy').replace(/62"/g,'70"')}
+  `),
+  shopping: ()=>svgWrap(`
+    <path d="M28 38 L72 38 L78 84 L22 84 Z" fill="#F4C95D"/>
+    <path d="M36 38 C36 24 44 16 50 16 C56 16 64 24 64 38" stroke="#8B5E34" stroke-width="5" fill="none"/>
+    ${faceParts('happy').replace(/62"/g,'66"')}
+  `),
+  offsets: ()=>svgWrap(`
+    <path d="M50 12 C74 22 78 48 58 68 C50 76 44 68 44 60 C30 60 22 46 32 30 C40 18 46 14 50 12 Z" fill="#7FB069"/>
+    <path d="M50 20 C50 40 46 55 44 66" stroke="#2F6B45" stroke-width="2.5" fill="none"/>
+    ${faceParts('happy').replace(/cy="46"/g,'cy="42"').replace(/cy="44"/g,'cy="40"').replace(/62"/g,'54"')}
+  `)
+};
+function mountMascots(){
+  Object.keys(MASCOTS).forEach(key=>{
+    const el = document.getElementById('m-'+key);
+    if(el) el.innerHTML = MASCOTS[key]();
+  });
+  document.getElementById('brandBadge').innerHTML = `<svg viewBox="0 0 24 24" width="26" height="26"><path d="M12 2 C16 6 18 10 18 13 A6 6 0 1 1 6 13 C6 10 8 6 12 2 Z" fill="#fff"/></svg>`;
+  const charStrip = document.getElementById('charStrip');
+  ['household','water','electricity','transport','flights','food','shopping'].forEach(k=>{
+    const d = document.createElement('div'); d.className='mascot'; d.innerHTML = MASCOTS[k](); charStrip.appendChild(d);
+  });
+}
+mountMascots();
+
+/* ---------- 3. TREE (SPROUT) CHARACTER ---------- */
+function treeSVG(tier, opts){
+  opts = opts||{};
+  const size = opts.size || 100;
+  const palettes = [
+    {fol1:'#7FB069', fol2:'#8FC17E', fol3:'#A9CC8E', trunk:'#8B5E34', mood:'happy', fruit:true, smog:0, droop:0},
+    {fol1:'#9BBE5E', fol2:'#B7C96A', fol3:'#CDD98A', trunk:'#8B5E34', mood:'calm', fruit:true, smog:0, droop:0.02},
+    {fol1:'#C9B45C', fol2:'#B79A55', fol3:'#a68a4d', trunk:'#7a5230', mood:'calm', fruit:false, smog:0.35, droop:0.05},
+    {fol1:'#9096a0', fol2:'#7d838d', fol3:'#6b7178', trunk:'#5b4530', mood:'sad', fruit:false, smog:0.65, droop:0.09}
+  ];
+  const p = palettes[Math.min(tier,3)];
+  const moodMouth = p.mood==='sad'
+    ? `<path d="M40 66 Q50 58 60 66" stroke="#2b2b2b" stroke-width="3" fill="none" stroke-linecap="round"/>`
+    : p.mood==='calm'
+    ? `<path d="M41 63 Q50 68 59 63" stroke="#2b2b2b" stroke-width="3" fill="none" stroke-linecap="round"/>`
+    : `<path d="M38 61 Q50 74 62 61" stroke="#2b2b2b" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+  const droopY = p.droop*40;
+  const fruits = p.fruit ? `
+    <circle cx="34" cy="46" r="4.5" fill="#C4562F"/>
+    <circle cx="68" cy="52" r="4.5" fill="#C4562F"/>
+    <circle cx="50" cy="34" r="4.5" fill="#F4C95D"/>` : '';
+  const smog = p.smog>0 ? `
+    <ellipse cx="60" cy="18" rx="26" ry="12" fill="#7d838d" opacity="${p.smog}"/>
+    <ellipse cx="40" cy="12" rx="20" ry="9" fill="#7d838d" opacity="${p.smog*0.8}"/>` : '';
+  const sparkle = p.mood==='happy' ? `
+    <circle cx="80" cy="20" r="2.5" fill="#F4C95D"/>
+    <circle cx="86" cy="30" r="1.6" fill="#F4C95D"/>
+    <path d="M18 26 l3 3 l-3 3 l-3 -3 Z" fill="#7FB069"/>` : '';
+  return `<svg viewBox="0 0 100 110" width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
+    ${smog}
+    <path d="M46 70 C44 90 44 98 46 106 L54 106 C56 98 56 90 54 70 Z" fill="${p.trunk}"/>
+    <ellipse cx="50" cy="${52+droopY}" rx="34" ry="28" fill="${p.fol1}"/>
+    <ellipse cx="28" cy="${58+droopY}" rx="20" ry="18" fill="${p.fol2}"/>
+    <ellipse cx="72" cy="${58+droopY}" rx="20" ry="18" fill="${p.fol3}"/>
+    ${fruits}
+    <circle cx="38" cy="${55+droopY}" r="5" fill="#123524"/><circle cx="39.5" cy="${53+droopY}" r="1.5" fill="#fff"/>
+    <circle cx="62" cy="${55+droopY}" r="5" fill="#123524"/><circle cx="63.5" cy="${53+droopY}" r="1.5" fill="#fff"/>
+    ${moodMouth.replace(/6[136]"/,(63+droopY)+'"')}
+    ${sparkle}
+  </svg>`;
+}
+function tierFromTonnes(t){
+  if(t<=3) return 0;
+  if(t<=6) return 1;
+  if(t<=9) return 2;
+  return 3;
+}
+function paintTree(id, tonnesPerPerson, size){
+  document.getElementById(id).innerHTML = treeSVG(tierFromTonnes(tonnesPerPerson), {size});
+}
+paintTree('introTree', 2, 180);
+paintTree('miniTree', 2, 34);
+
+/* ---------- 4. WIZARD NAVIGATION ---------- */
+const TOTAL_STEPS = 12; // 0..11
+let currentStep = 0;
+function renderTrail(){
+  const trail = document.getElementById('trail');
+  trail.innerHTML='';
+  for(let i=1;i<=10;i++){
+    const s = document.createElement('div');
+    s.className='stone'+(i<currentStep?' done':'')+(i===currentStep?' active':'');
+    s.textContent=i;
+    s.onclick=()=>{ if(i<=currentStep || i===currentStep+1 || document.querySelector(`.step[data-step="${currentStep}"]`)) goToStep(i); };
+    trail.appendChild(s);
+    if(i<10){ const line=document.createElement('div'); line.className='stone-line'; if(i<currentStep) line.style.background='#7FB069'; trail.appendChild(line); }
+  }
+}
+function goToStep(n){
+  document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));
+  document.querySelector(`.step[data-step="${n}"]`).classList.add('active');
+  currentStep = n;
+  renderTrail();
+  window.scrollTo({top:0, behavior:'smooth'});
+  liveUpdate();
+}
+function goNext(){ goToStep(Math.min(currentStep+1, TOTAL_STEPS-1)); }
+function goBack(){ goToStep(Math.max(currentStep-1, 0)); }
+function showResults(){ goToStep(11); renderResults(); }
+function restart(){ location.reload(); }
+renderTrail();
+
+/* ---------- 5. SEGMENTED BUTTON + CONDITIONAL WIRING ---------- */
+function wireSeg(id){
+  const seg = document.getElementById(id);
+  if(!seg) return;
+  seg.querySelectorAll('button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      seg.querySelectorAll('button').forEach(b=>b.classList.remove('on'));
+      btn.classList.add('on');
+      seg.dispatchEvent(new Event('change'));
+      liveUpdate();
+    });
+  });
+}
+function segValue(id){
+  const on = document.querySelector('#'+id+' button.on');
+  return on ? on.dataset.v : null;
+}
+['areaType','waterMode','elecMode','backupType','dietType','foodWaste','shopLevel'].forEach(wireSeg);
+
+document.getElementById('waterMode').addEventListener('change', ()=>{
+  const v = segValue('waterMode');
+  document.getElementById('waterKnown').style.display = v==='known'?'block':'none';
+  document.getElementById('waterEstimate').style.display = v==='estimate'?'block':'none';
+});
+document.getElementById('elecMode').addEventListener('change', ()=>{
+  const v = segValue('elecMode');
+  document.getElementById('elecKnown').style.display = v==='known'?'block':'none';
+  document.getElementById('elecEstimate').style.display = v==='estimate'?'block':'none';
+});
+document.getElementById('backupType').addEventListener('change', ()=>{
+  const v = segValue('backupType');
+  document.getElementById('genFields').style.display = v==='generator'?'block':'none';
+  document.getElementById('invFields').style.display = v==='inverter'?'block':'none';
+});
+document.getElementById('hasPool').addEventListener('change', function(){
+  document.getElementById('poolSizeM2').style.display = this.checked?'block':'none';
+});
+document.getElementById('hasGeyser').addEventListener('change', function(){
+  document.getElementById('geyserLitres').style.display = this.checked?'block':'none';
+});
+document.getElementById('hasPoolPump').addEventListener('change', function(){
+  document.getElementById('poolPumpHours').style.display = this.checked?'block':'none';
+});
+document.getElementById('hasCar').addEventListener('change', function(){
+  document.getElementById('carFields').style.display = this.checked?'block':'none';
+});
+document.getElementById('country').addEventListener('change', function(){
+  document.getElementById('provinceRow').style.display = this.value==='ZA'?'grid':'none';
+});
+const heatLabels = {electric:'—', gas:'9kg gas cylinders / month', paraffin:'Litres / month', wood:'Kg wood / month', coal:'Kg coal / month', none:'—'};
+document.getElementById('heatFuel').addEventListener('change', function(){
+  document.getElementById('heatQtyLabel').textContent = heatLabels[this.value];
+});
+const cookLabels = {electric:'—', gas:'9kg gas cylinders / month', paraffin:'Litres / month', wood:'Kg wood / month'};
+document.getElementById('cookFuel').addEventListener('change', function(){
+  document.getElementById('cookQtyLabel').textContent = cookLabels[this.value];
+});
+
+// live recalculation on every input
+document.querySelectorAll('input, select').forEach(el=>{
+  el.addEventListener('input', liveUpdate);
+  el.addEventListener('change', liveUpdate);
+});
+
+/* ---------- 6. EMISSION FACTORS (reference data) ---------- */
+const EF = {
+  gridSA: 0.95,        // kg CO2 / kWh — Eskom coal-heavy grid (approx)
+  gridOther: 0.45,     // kg CO2 / kWh — rough global average
+  waterEnergyIntensity: 0.4, // kWh per kL for municipal treatment + pumping
+  petrolPerL: 2.31,    // kg CO2 / litre
+  dieselPerL: 2.68,    // kg CO2 / litre
+  lpgPerKg: 2.98,      // kg CO2 / kg
+  paraffinPerL: 2.53,  // kg CO2 / litre
+  coalPerKg: 2.4,      // kg CO2 / kg (household use)
+  woodPerKg: 0.10,     // kg CO2 / kg (mostly biogenic; small factor for harvest/transport)
+  taxiPerKm: 0.09,     // kg CO2 / passenger-km — minibus taxi
+  busPerKm: 0.08,      // kg CO2 / passenger-km
+  trainPerKm: 0.04,    // kg CO2 / passenger-km
+  shortHaulReturn: 0.225, // tonnes CO2e per return economy short-haul flight
+  longHaulReturn: 1.43,   // tonnes CO2e per return economy long-haul flight
+  genPetrolLPerKWh: 0.4,
+  genDieselLPerKWh: 0.3,
+  invLossFactor: 0.15
+};
+
+function num(id, dflt){ const el=document.getElementById(id); if(!el) return dflt||0; const v=parseFloat(el.value); return isNaN(v)?(dflt||0):v; }
+function val(id){ const el=document.getElementById(id); return el?el.value:null; }
+function checked(id){ const el=document.getElementById(id); return el?el.checked:false; }
+function gridFactor(){ return val('country')==='ZA' ? EF.gridSA : EF.gridOther; }
+
+/* ---------- 7. CALCULATION MODULES (return kg CO2e / year) ---------- */
+function calcWater(){
+  let kLmonth;
+  if(segValue('waterMode')==='known'){
+    kLmonth = num('monthlyKL',18);
+  } else {
+    const showerL = num('showersPerDay',3)*num('showerMinutes',7)*parseFloat(val('showerHeadType')||9)*30;
+    const bathL = num('bathsPerWeek',1)*80*4.33;
+    const toiletL = num('toiletFlushesPerDay',12)*parseFloat(val('toiletType')||9)*30;
+    const washL = num('washingLoadsPerWeek',3)*60*4.33;
+    const dishL = num('dishwasherLoadsPerWeek',0)*15*4.33;
+    const gardenL = num('gardenM2',0)*num('gardenHoursPerWeek',0)*15*4.33; // ~15L/m2/hr sprinkler
+    const poolL = checked('hasPool') ? num('poolSizeM2',20)*4*30 : 0; // evap+refill approx 4L/m2/day
+    kLmonth = (showerL+bathL+toiletL+washL+dishL+gardenL+poolL)/1000;
+  }
+  if(checked('rainwater')) kLmonth *= 0.9;
+  const kLyear = kLmonth*12;
+  return kLyear*EF.waterEnergyIntensity*gridFactor();
+}
+function calcElectricity(){
+  let kWhMonth;
+  if(segValue('elecMode')==='known'){
+    kWhMonth = num('monthlyKWh',850);
+  } else {
+    const geyser = checked('hasGeyser') ? (num('geyserLitres',150)/150)*4.5*30 : 0; // ~4.5kWh/day per 150L geyser
+    const ac = num('acHours',0)*1.5*30;
+    const stove = num('stoveHours',6)*2*4.33;
+    const poolPump = checked('hasPoolPump') ? num('poolPumpHours',4)*1.1*30 : 0;
+    const fridge = num('fridgeCount',1)*1.5*30;
+    const perBulb = {led:0.01, cfl:0.02, incandescent:0.06}[val('lightingType')||'led'];
+    const lighting = num('bulbCount',10)*perBulb*5*30;
+    const dryer = num('dryerLoadsPerWeek',1)*2.5*4.33;
+    kWhMonth = geyser+ac+stove+poolPump+fridge+lighting+dryer;
+  }
+  return kWhMonth*12*gridFactor();
+}
+function calcBackup(){
+  const type = segValue('backupType');
+  if(type==='generator'){
+    const litersPerKWh = val('genFuel')==='diesel'? EF.genDieselLPerKWh : EF.genPetrolLPerKWh;
+    const ef = val('genFuel')==='diesel'? EF.dieselPerL : EF.petrolPerL;
+    const kWhMonth = num('genHours',20)*num('genLoad',2.5,);
+    return kWhMonth*litersPerKWh*ef*12;
+  }
+  if(type==='inverter'){
+    const kWhMonth = num('invHours',30)*0.8; // assume ~0.8kW average draw
+    return kWhMonth*(1+EF.invLossFactor)*12*gridFactor()*0.15; // partial extra loss already largely counted in grid bill
+  }
+  return 0; // solar, ups, none ~ negligible direct emissions
+}
+function calcTransport(){
+  let carKg = 0;
+  if(checked('hasCar')){
+    const kmYear = num('carKm',1200)*12;
+    const fuel = val('carFuel');
+    if(fuel==='electric'){
+      carKg = kmYear*0.18*gridFactor(); // ~0.18 kWh/km EV
+    } else if(fuel==='hybrid'){
+      const lPer100 = num('carEfficiency',8)*0.6;
+      carKg = (kmYear/100)*lPer100*EF.petrolPerL;
+    } else {
+      const lPer100 = num('carEfficiency',8);
+      const ef = fuel==='diesel'?EF.dieselPerL:EF.petrolPerL;
+      carKg = (kmYear/100)*lPer100*ef;
+    }
+  }
+  const pubKg = (num('busKm',0)*EF.busPerKm + num('trainKm',0)*EF.trainPerKm + num('taxiKm',0)*EF.taxiPerKm)*52;
+  return carKg+pubKg;
+}
+function calcFlights(){
+  const cabin = parseFloat(val('cabinClass')||1);
+  const t = num('shortHaul',0)*EF.shortHaulReturn + num('longHaul',0)*EF.longHaulReturn;
+  return t*cabin*1000; // kg
+}
+function fuelQtyKg(fuelType, qty){
+  switch(fuelType){
+    case 'gas': return qty*9*EF.lpgPerKg;
+    case 'paraffin': return qty*EF.paraffinPerL;
+    case 'wood': return qty*EF.woodPerKg;
+    case 'coal': return qty*EF.coalPerKg;
+    default: return 0;
+  }
+}
+function calcHeating(){
+  const heat = fuelQtyKg(val('heatFuel'), num('heatQty',0))*12;
+  const cook = fuelQtyKg(val('cookFuel'), num('cookQty',0))*12;
+  return heat+cook;
+}
+function calcFood(){
+  const hh = num('householdSize',3);
+  const baseline = parseFloat(segValue('dietType')||2.5);
+  const wasteMult = parseFloat(segValue('foodWaste')||1.0);
+  return baseline*1000*wasteMult*hh;
+}
+function calcConsumption(){
+  const hh = num('householdSize',3);
+  const shopBase = parseFloat(segValue('shopLevel')||1.0);
+  const consumptionKg = shopBase*1000*hh;
+  const electronicsKg = num('electronicsCount',1)*200*1000/1000*1; // 0.2t per big item
+  return consumptionKg + num('electronicsCount',1)*200;
+}
+function calcOffsets(){
+  const q = parseFloat(val('offsetQuality')||1);
+  return num('offsetTonnes',0)*1000*q;
+}
+
+function computeAll(){
+  return {
+    water: calcWater(),
+    electricity: calcElectricity(),
+    backup: calcBackup(),
+    transport: calcTransport(),
+    flights: calcFlights(),
+    heating: calcHeating(),
+    food: calcFood(),
+    consumption: calcConsumption(),
+    offsets: calcOffsets()
+  };
+}
+
+/* ---------- 8. LIVE HEADER METER ---------- */
+function liveUpdate(){
+  const r = computeAll();
+  const hh = Math.max(num('householdSize',3),1);
+  const totalKg = r.water+r.electricity+r.backup+r.transport+r.flights+r.heating+r.food+r.consumption - r.offsets;
+  const totalT = Math.max(totalKg,0)/1000;
+  const perPerson = totalT/hh;
+  document.getElementById('miniNum').textContent = totalT.toFixed(1)+' t';
+  paintTree('miniTree', perPerson, 34);
+}
+liveUpdate();
+
+/* ---------- 9. RESULTS RENDER ---------- */
+const CATS = [
+  {key:'water', label:'Water', color:'#3E7CB1', icon:'water'},
+  {key:'electricity', label:'Electricity', color:'#F4C95D', icon:'electricity'},
+  {key:'backup', label:'Backup power', color:'#2F6B45', icon:'backup'},
+  {key:'transport', label:'Transport', color:'#6FA8D6', icon:'transport'},
+  {key:'flights', label:'Flights', color:'#8B5E34', icon:'flights'},
+  {key:'heating', label:'Heating & cooking', color:'#E0762F', icon:'heating'},
+  {key:'food', label:'Food & diet', color:'#C4562F', icon:'food'},
+  {key:'consumption', label:'Shopping', color:'#9BBE5E', icon:'shopping'}
+];
+function renderResults(){
+  const r = computeAll();
+  const hh = Math.max(num('householdSize',3),1);
+  const totalKg = Math.max(CATS.reduce((s,c)=>s+r[c.key],0) - r.offsets, 0);
+  const totalT = totalKg/1000;
+  const perPersonT = totalT/hh;
+  const offsetT = r.offsets/1000;
+
+  paintTree('resultTree', perPersonT, 220);
+  const tier = tierFromTonnes(perPersonT);
+  const verdicts = [
+    ['Sprout is thriving!', 'Your footprint is well below the South African average — genuinely great habits. Keep an eye on flights and shopping as your household grows.'],
+    ['Sprout is growing steadily.', 'A pretty typical footprint with clear room to trim — electricity and transport are usually the easiest wins from here.'],
+    ['Sprout is feeling the heat.', 'Your footprint is running high, mostly driven by the categories below. A few focused changes could bring real relief.'],
+    ['Sprout needs your help.', 'This is a heavy footprint. The breakdown below shows exactly where the biggest opportunities are — start with the largest bar.']
+  ];
+  document.getElementById('verdictText').textContent = verdicts[tier][0];
+  document.getElementById('verdictSub').textContent = verdicts[tier][1];
+
+  document.getElementById('statTotal').textContent = totalT.toFixed(1)+' t';
+  document.getElementById('statPerPerson').textContent = perPersonT.toFixed(1)+' t';
+  document.getElementById('statOffset').textContent = offsetT.toFixed(1)+' t';
+
+  // breakdown bars
+  const maxVal = Math.max(...CATS.map(c=>r[c.key]), 1);
+  const bb = document.getElementById('breakdownBars');
+  bb.innerHTML = CATS.map(c=>{
+    const kg = r[c.key];
+    const t = (kg/1000).toFixed(2);
+    const pct = Math.min(100,(kg/maxVal)*100);
+    return `<div class="bar-row">
+      <div class="bar-icon">${MASCOTS[c.icon]()}</div>
+      <div class="bar-label">${c.label}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%; background:${c.color};"></div></div>
+      <div class="bar-val mono">${t} t</div>
+    </div>`;
+  }).join('');
+
+  // comparison
+  const benchmarks = [
+    {label:'You (per person)', v:perPersonT, color:'#2F6B45'},
+    {label:'South African average', v:6.9, color:'#F4C95D'},
+    {label:'Global average', v:4.7, color:'#6FA8D6'},
+    {label:'1.5°C-aligned target (2030)', v:2.0, color:'#7FB069'}
+  ];
+  const maxB = Math.max(...benchmarks.map(b=>b.v), 1);
+  document.getElementById('compareBars').innerHTML = benchmarks.map(b=>`
+    <div class="compare-row">
+      <div class="lab"><span>${b.label}</span><span class="mono">${b.v.toFixed(1)} t / yr</span></div>
+      <div class="compare-track"><div class="compare-fill" style="width:${Math.min(100,(b.v/maxB)*100)}%; background:${b.color};"></div></div>
+    </div>`).join('');
+
+  // tips — target the top 2 categories
+  const sorted = [...CATS].sort((a,b)=>r[b.key]-r[a.key]);
+  const tipBank = {
+    water: 'Fit low-flow shower heads and dual-flush toilets — these usually cut household water use by 20–30% with no lifestyle change.',
+    electricity: 'A geyser timer or blanket, plus switching remaining bulbs to LED, is often the single biggest and cheapest electricity win in a South African home.',
+    backup: 'Where possible, shift backup capacity from a petrol/diesel generator toward a grid-charged battery or solar — generators are the most carbon-intensive way to keep the lights on.',
+    transport: 'Combining short trips, checking tyre pressure, and using a minibus taxi or bus for one or two regular trips a week can meaningfully cut this category.',
+    flights: 'Flights are hard to offset with lifestyle changes elsewhere — flying economy instead of business, and combining trips, has the most direct effect.',
+    heating: 'If you rely on paraffin or coal for heating, even partially switching to LPG gas or efficient electric heating reduces both emissions and indoor air pollution.',
+    food: 'Cutting food waste and swapping two or three meat-based meals a week for plant-based ones is one of the most effective personal changes available.',
+    consumption: 'Buying fewer, longer-lasting electronics and clothing — and repairing before replacing — reduces this category more than almost any single habit change.'
+  };
+  document.getElementById('tipsList').innerHTML = sorted.slice(0,3).map(c=>`<li><strong>${c.label}:</strong> ${tipBank[c.key]}</li>`).join('');
+}
+
+</script>
+</body>
+</html>
